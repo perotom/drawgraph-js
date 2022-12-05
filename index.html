@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drawgraph Demo</title>
+  <script src="dist/drawgraph.umd.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="dist/drawgraph.min.css" />
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0;}
+  </style>
+</head>
+<body>
+  <div id="graph" class="drawgraph-editor"></div>
+  <script>
+    var elemGraph = document.getElementById("graph");
+    const graph = new Drawgraph.Editor(elemGraph);
+    graph.start();
+  </script>
+</body>
+</html>

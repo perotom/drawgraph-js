@@ -1,0 +1,35 @@
+{
+  "name": "Drawgraph",
+  "version": "0.0.1",
+  "description": "Package to convert a nested list into a tree menu",
+  "module": "dist/drawgraph.esm.min.js",
+  "browser": "dist/drawgraph.umd.min.js",
+  "main": "dist/drawgraph.esm.min.js",
+  "scripts": {
+    "start": "npm-run-all -p watch serve",
+    "serve": "lite-server",
+    "watch": "rollup -c -w",
+    "build": "rollup -c"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/perotom/drawgraph-js.git"
+  },
+  "author": "Thomas Peroutka",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/perotom/drawgraph-js/issues"
+  },
+  "homepage": "https://github.com/perotom/drawgraph-js#readme",
+  "devDependencies": {
+    "lite-server": "^2.6.1",
+    "node-sass": "^8.0.0",
+    "npm-run-all": "^4.1.5",
+    "rollup": "^1.29.0",
+    "rollup-plugin-scss": "^2.6.1",
+    "rollup-plugin-terser": "^7.0.2"
+  },
+  "files": [
+    "dist"
+  ]
+}
