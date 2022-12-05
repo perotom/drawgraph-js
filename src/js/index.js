@@ -1,9 +1,10 @@
 import '../styles/main.scss';
 
 export class Editor {
+
   constructor(container) {
     this.container = container;
-    this.node = new Node(uuid());
+    this.nodes = [];
   }
 
   start () {
@@ -11,15 +12,43 @@ export class Editor {
   }
 
   addNode() {
+    var elemNode = document.createElement("div");
+    elemNode.classList.add('drawgraph-node');
+    this.nodes.push(new Node(uuid()));
+
+    var elemInputs = document.createElement("div");
+    elemInputs.classList.add('inputs');
+    for (var i = 0; i < 3; i++) {
+      var elemInput = document.createElement("div");
+      elemInput.classList.add('input');
+      var elemLabel = document.createElement("span");
+      elemLabel.innerText = 'IN' + i;
+      elemInput.appendChild(elemLabel);
+      elemInputs.appendChild(elemInput);
+    }
+    elemNode.appendChild(elemInputs);
+
+    var elemContent = document.createElement("div");
+    elemContent.classList.add('content');
+    var elemTitle = document.createElement("h1");
+    elemTitle.innerText = "Test";
+    elemContent.appendChild(elemTitle);
+    elemNode.appendChild(elemContent);
+
+    var elemOutputs = document.createElement("div");
+    elemOutputs.classList.add('outputs');
+    elemNode.appendChild(elemOutputs);
     
+
+    dragElement(elemNode, 1); // make dragable
+    this.container.appendChild(elemNode);
   }
 
 }
 
 export class Node {
-  constructor(title) {
-    this.title = title;
-    console.log(this.title);
+  constructor(id) {
+    this.id = id;
   }
 }
 
@@ -29,3 +58,37 @@ function uuid() {
   );
 }
 
+function dragElement(elmnt, snapSize = 1) {
+  var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  elmnt.onmousedown = dragMouseDown;
+
+  function dragMouseDown(e) {
+    e = e || window.event;
+    e.preventDefault();
+    // get the mouse cursor position at startup:
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    document.onmouseup = closeDragElement;
+    // call a function whenever the cursor moves:
+    document.onmousemove = elementDrag;
+  }
+
+  function elementDrag(e) {
+    e = e || window.event;
+    e.preventDefault();
+    // calculate the new cursor position:
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    // set the element's new position:
+    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+  }
+
+  function closeDragElement() {
+    // stop moving when mouse button is released:
+    document.onmouseup = null;
+    document.onmousemove = null;
+  }
+}
