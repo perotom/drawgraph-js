@@ -21,11 +21,10 @@ $bg-dot-space: 20px;
   display: flex;
   flex-direction: column;
   position: absolute;
-  width: 250px;
+  width: 200px;
   background-color: white;
   border: 1px solid #ccc;
   z-index: 1;
-  cursor: move;
   user-select: none;
 
   box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 1px -1px, rgba(0, 0, 0, 0.14) 0px 1px 1px 0px, rgba(0, 0, 0, 0.12) 0px 1px 3px 0px;
@@ -36,6 +35,7 @@ $bg-dot-space: 20px;
     background-color: #ccc;
     padding: 10px 0;
     font-weight: bold;
+    cursor: move;
   }
   .container {
     display: flex;
@@ -84,5 +84,7 @@ $bg-dot-space: 20px;
 }
 
 .drawgraph-edge {
+  position: absolute;
+  overflow: visible !important;
   z-index: 0;
 }

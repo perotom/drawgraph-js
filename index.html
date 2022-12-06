@@ -11,12 +11,26 @@
   </style>
 </head>
 <body>
-  <div id="graph" class="drawgraph-editor"></div>
+  <button onclick="exportTest()">Export</button>
+  <button onclick="importTest()">Import</button>
+  <div id="graph" class="drawgraph-editor">
+  </div>
   <script>
     var elemGraph = document.getElementById("graph");
     const graph = new Drawgraph.Editor(elemGraph);
     graph.start();
-    graph.addNode();
+    graph.addNode('Input', [], [{ name: 'GNSS_Lat'}, { name: 'GNSS_Lon'}, { name: 'GNSS_Alt'}]);
+    graph.addNode('Output', [{ name: 'Distance'}], []);
+
+    function exportTest() {
+      console.log(graph.export());
+      document.cookie = JSON.stringify(graph.export());
+    }
+    function importTest() {
+      if (document.cookie) {
+        graph.import(JSON.parse(document.cookie));
+      }
+    }
   </script>
 </body>
 </html>
