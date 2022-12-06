@@ -16,28 +16,43 @@ export class Editor {
     elemNode.classList.add('drawgraph-node');
     this.nodes.push(new Node(uuid()));
 
+
+    var elemTitle = document.createElement("div");
+    elemTitle.classList.add('title');
+    elemTitle.innerText = "Test";
+    elemNode.appendChild(elemTitle);
+
+    var elemContainer = document.createElement("div");
+    elemContainer.classList.add('container');
+
     var elemInputs = document.createElement("div");
     elemInputs.classList.add('inputs');
     for (var i = 0; i < 3; i++) {
       var elemInput = document.createElement("div");
       elemInput.classList.add('input');
       var elemLabel = document.createElement("span");
-      elemLabel.innerText = 'IN' + i;
+      elemLabel.innerText = 'Hello world this is a long test' + i;
       elemInput.appendChild(elemLabel);
       elemInputs.appendChild(elemInput);
     }
-    elemNode.appendChild(elemInputs);
+    elemContainer.appendChild(elemInputs);
 
     var elemContent = document.createElement("div");
     elemContent.classList.add('content');
-    var elemTitle = document.createElement("h1");
-    elemTitle.innerText = "Test";
-    elemContent.appendChild(elemTitle);
-    elemNode.appendChild(elemContent);
+    elemContainer.appendChild(elemContent);
 
     var elemOutputs = document.createElement("div");
     elemOutputs.classList.add('outputs');
-    elemNode.appendChild(elemOutputs);
+    for (var i = 0; i < 4; i++) {
+      var elemOutput = document.createElement("div");
+      elemOutput.classList.add('output');
+      var elemLabel = document.createElement("span");
+      elemLabel.innerText = 'IN' + i;
+      elemOutput.appendChild(elemLabel);
+      elemOutputs.appendChild(elemOutput);
+    }
+    elemContainer.appendChild(elemOutputs);
+    elemNode.appendChild(elemContainer);
     
 
     dragElement(elemNode, 1); // make dragable

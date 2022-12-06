@@ -19,19 +19,31 @@ $bg-dot-space: 20px;
 
 .drawgraph-node {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   position: absolute;
   width: 250px;
   background-color: white;
   border: 1px solid #ccc;
   z-index: 1;
+  cursor: move;
+  user-select: none;
 
   box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 1px -1px, rgba(0, 0, 0, 0.14) 0px 1px 1px 0px, rgba(0, 0, 0, 0.12) 0px 1px 3px 0px;
   border-radius: 4px;
 
+  .title {
+    text-align: center;
+    background-color: #ccc;
+    padding: 10px 0;
+    font-weight: bold;
+  }
+  .container {
+    display: flex;
+    align-items: center;
+  }
+
   .content {
     width: 100%;
-    padding: 16px;
   }
   .inputs, .outputs {
     width: 0px;
@@ -44,13 +56,33 @@ $bg-dot-space: 20px;
     border-radius: 50%;
     border: 2px solid #ccc;
     margin-left: -10px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+
+  .input span,
+  .output span {
+    display: inline-block;
+    font-size: 14px;
+    vertical-align: middle;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100px;
   }
 
   .input span {
-    display: inline-block;
+    float: left;
     margin-left: 20px;
-    font-size: 14px;
-    line-height: 14px;
-    vertical-align: middle;
   }
+
+  .output span {
+    float: right;
+    margin-right: 20px;
+    text-align: right;
+  }
+}
+
+.drawgraph-edge {
+  z-index: 0;
 }
