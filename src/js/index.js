@@ -36,9 +36,19 @@ export class Editor {
     for (var i = 0; i < node.inputs.length; i++) {
       var elemInput = document.createElement("div");
       elemInput.classList.add('input');
+      elemInput.classList.add('input_' + i);
       var elemLabel = document.createElement("span");
       elemLabel.innerText = node.inputs[i].name;
       elemInput.appendChild(elemLabel);
+      elemInput.onmouseup = function(e) {
+        e = e || window.event;
+        e.preventDefault();
+        const inputBox = e.target.getBoundingClientRect();
+        var line = document.getElementById('drawgraph-edge-current').getElementsByTagName('line')[0];
+        line.setAttribute('x2',inputBox.x + inputBox.width / 2);
+        line.setAttribute('y2',inputBox.y - inputBox.height / 2);
+        document.getElementById('drawgraph-edge-current').removeAttribute('id');
+      }.bind(this);
       elemInputs.appendChild(elemInput);
     }
     elemContainer.appendChild(elemInputs);
@@ -52,6 +62,7 @@ export class Editor {
     for (var i = 0; i < node.outputs.length; i++) {
       var elemOutput = document.createElement("div");
       elemOutput.classList.add('output');
+      elemOutput.classList.add('output_' + i);
       var elemLabel = document.createElement("span");
       elemLabel.innerText = node.outputs[i].name;
       elemOutput.appendChild(elemLabel);
@@ -59,34 +70,39 @@ export class Editor {
       elemOutput.onmousedown = function(e) {
         e = e || window.event;
         e.preventDefault();
-        var startX = e.clientX;
-        var startY = e.clientY;
+        var startX = e.clientX - this.container.offsetLeft;
+        var startY = e.clientY - this.container.offsetTop;
         // create new svg elem
         var lineContainer = document.createElementNS('http://www.w3.org/2000/svg',"svg");
         lineContainer.classList.add('drawgraph-edge');
+        lineContainer.classList.add('node_out_' + i);
         lineContainer.id = 'drawgraph-edge-current'
         var newLine = document.createElementNS('http://www.w3.org/2000/svg','line');
-        newLine.setAttribute('id','line2');
-        newLine.setAttribute('x1','0');
-        newLine.setAttribute('y1','0');
-        newLine.setAttribute('x2','200');
-        newLine.setAttribute('y2','200');
+        console.log(e.target.classList);
+        const outputBox = e.target.getBoundingClientRect();
+        newLine.setAttribute('x1',outputBox.x + outputBox.width / 2);
+        newLine.setAttribute('y1',outputBox.y - outputBox.height / 2);
+        newLine.setAttribute('x2',startX);
+        newLine.setAttribute('y2',startY);
         newLine.setAttribute("stroke", "black");
+        newLine.setAttribute("stroke-width", 3);
         lineContainer.appendChild(newLine);
         this.container.appendChild(lineContainer);
 
         document.onmouseup = function(e) {
-          console.log('mouseup');
-          elemOutput.onmouseup = null;
-          elemOutput.onmousemove = null;
-          this.container.removeChild(document.getElementById('drawgraph-edge-current'));
+          document.onmouseup = null;
+          document.onmousemove = null;
+          if (document.getElementById('drawgraph-edge-current')) { // might be already removed when connected
+            this.container.removeChild(document.getElementById('drawgraph-edge-current'));
+          }
         }.bind(this);
         document.onmousemove = function(e) {
           e = e || window.event;
           e.preventDefault();
-          console.log(e.clientX);
-          console.log(e.clientY);
-        };
+          var line = document.getElementById('drawgraph-edge-current').getElementsByTagName('line')[0];
+          line.setAttribute('x2',e.clientX - this.container.offsetLeft);
+          line.setAttribute('y2',e.clientY - this.container.offsetTop);
+        }.bind(this);
       }.bind(this);
       elemOutputs.appendChild(elemOutput);
     }

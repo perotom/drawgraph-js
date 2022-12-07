@@ -58,6 +58,14 @@ $bg-dot-space: 20px;
     margin-left: -10px;
     margin-top: 6px;
     margin-bottom: 6px;
+
+    &:hover {
+      background-color: cornflowerblue;
+    }
+  }
+
+  .output {
+    cursor: crosshair;
   }
 
   .input span,
