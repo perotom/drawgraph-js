@@ -11,6 +11,7 @@
   </style>
 </head>
 <body>
+  <button onclick="printAll()">Print</button>
   <button onclick="exportTest()">Export</button>
   <button onclick="importTest()">Import</button>
   <div id="graph" class="drawgraph-editor">
@@ -26,7 +27,11 @@
     graph.addEdge(n1, 'GNSS_Lon', n2, 'Longitude');
     graph.addEdge(n2, 'Distance', n3, 'Out1');
     graph.addEdge(n2, 'Speed', n3, 'Out2');
-
+    
+    function printAll() {
+      console.log(graph.getNodes());
+      console.log(graph.getEdges());
+    }
     function exportTest() {
       console.log(graph.export());
       document.cookie = JSON.stringify(graph.export());

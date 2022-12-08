@@ -10,6 +10,33 @@ export class Editor {
     console.info("Start Drawgraph!!");
   }
 
+  getNodes() {
+    var nodes = [];
+    var elemts = this.container.querySelectorAll('.drawgraph-node');
+    for (var i = 0; i < elemts.length; i++) {
+      const currentElem = elemts[i];
+      const inputs = Array.from(currentElem.querySelectorAll('.input')).map(n => {
+        return {
+          name: n.getAttribute('data-input'),
+          maxEdges: +n.getAttribute('data-max-edges')
+        };
+      });
+      const outputs = Array.from(currentElem.querySelectorAll('.output')).map(n => {
+        return {
+          name: n.getAttribute('data-output'),
+          maxEdges: +n.getAttribute('data-max-edges')
+        };
+      });
+      nodes.push({
+        id: currentElem.getAttribute('data-id'),
+        title: currentElem.querySelector('.title').innerText,
+        inputs, outputs,
+        x: currentElem.offsetLeft,
+        y: currentElem.offsetTop
+      });
+    }
+    return nodes;
+  }
   addNode(title, inputs, outputs, initalX = 0, initalY = 0) {
     const nodeId = uuid();
     const elemNode = document.createElement("div");
@@ -158,6 +185,24 @@ export class Editor {
     }
   }
 
+  getEdges() {
+    var edges = [];
+    var elemts = this.container.querySelectorAll('.drawgraph-edge');
+    for (var i = 0; i < elemts.length; i++) {
+      const currentElem = elemts[i];
+      edges.push({
+        input: {
+          node: currentElem.getAttribute('data-input-node'),
+          name: currentElem.getAttribute('data-input')
+        },
+        output: {
+          node: currentElem.getAttribute('data-output-node'),
+          name: currentElem.getAttribute('data-output')
+        }
+      });
+    }
+    return edges;
+  }
   addEdge(from, fromOutput, to, toInput) {
     var lineContainer = document.createElementNS('http://www.w3.org/2000/svg',"svg");
     lineContainer.classList.add('drawgraph-edge');
