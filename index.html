@@ -19,6 +19,18 @@
   <script>
     var elemGraph = document.getElementById("graph");
     const graph = new Drawgraph.Editor(elemGraph);
+    graph.on('nodeClicked', (node) => {
+      console.log('clicked', node);
+    });
+    graph.on('nodeRemoved', (node) => {
+      console.log('removed', node);
+    });
+    graph.on('edgeAdded', (edge) => {
+      console.log('added', edge);
+    });
+    graph.on('edgeRemoved', (edge) => {
+      console.log('removed', edge);
+    });
     graph.start();
     const n1 = graph.addNode('Input', [], [{ name: 'GNSS_Lat'}, { name: 'GNSS_Lon'}, { name: 'GNSS_Alt'}], 20, 10);
     const n2 = graph.addNode('Calc', [{ name: 'Latitude', maxEdges: 1}, { name: 'Longitude', maxEdges: 1}], [{ name: 'Distance'}, { name: 'Speed'}], 300, 20);

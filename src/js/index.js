@@ -4,6 +4,11 @@ export class Editor {
 
   constructor(container) {
     this.container = container;
+    this.callbacks = [];
+  }
+
+  on(eventName, callback) {
+    this.callbacks[eventName] = callback;
   }
 
   start () {
@@ -15,27 +20,37 @@ export class Editor {
     var elemts = this.container.querySelectorAll('.drawgraph-node');
     for (var i = 0; i < elemts.length; i++) {
       const currentElem = elemts[i];
-      const inputs = Array.from(currentElem.querySelectorAll('.input')).map(n => {
-        return {
-          name: n.getAttribute('data-input'),
-          maxEdges: +n.getAttribute('data-max-edges')
-        };
-      });
-      const outputs = Array.from(currentElem.querySelectorAll('.output')).map(n => {
-        return {
-          name: n.getAttribute('data-output'),
-          maxEdges: +n.getAttribute('data-max-edges')
-        };
-      });
-      nodes.push({
-        id: currentElem.getAttribute('data-id'),
-        title: currentElem.querySelector('.title').innerText,
-        inputs, outputs,
-        x: currentElem.offsetLeft,
-        y: currentElem.offsetTop
-      });
+      nodes.push(this.elementNodeToData(currentElem));
     }
     return nodes;
+  }
+  getNode(id) {
+    var elemt = this.container.querySelector('.drawgraph-node[data-id="' + id + '"]');
+    if (elemt) {
+      return this.elementNodeToData(elemt);
+    }
+    return null;
+  }
+  elementNodeToData(currentElem) {
+    const inputs = Array.from(currentElem.querySelectorAll('.input')).map(n => {
+      return {
+        name: n.getAttribute('data-input'),
+        maxEdges: +n.getAttribute('data-max-edges')
+      };
+    });
+    const outputs = Array.from(currentElem.querySelectorAll('.output')).map(n => {
+      return {
+        name: n.getAttribute('data-output'),
+        maxEdges: +n.getAttribute('data-max-edges')
+      };
+    });
+    return {
+      id: currentElem.getAttribute('data-id'),
+      title: currentElem.querySelector('.title').innerText,
+      inputs, outputs,
+      x: currentElem.offsetLeft,
+      y: currentElem.offsetTop
+    };
   }
   addNode(title, inputs, outputs, initalX = 0, initalY = 0) {
     const nodeId = uuid();
@@ -45,6 +60,7 @@ export class Editor {
     elemNode.style.left = initalX + "px";
     elemNode.style.top = initalY + "px";
 
+    // add node title
     var elemTitle = document.createElement("div");
     elemTitle.classList.add('title');
     elemTitle.innerText = title;
@@ -54,6 +70,66 @@ export class Editor {
       this.removeNode(nodeId);
     }.bind(this);  
     elemNode.appendChild(elemTitle);
+
+    // make dragable
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0, dragged = false;
+    elemTitle.onmousedown = dragMouseDown;
+    
+    function dragMouseDown(e) {
+      e = e || window.event;
+      e.preventDefault();
+      // get the mouse cursor position at startup:
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      // call a function whenever the cursor moves:
+      document.onmousemove = elementDrag;
+      dragged = false;
+    }
+
+    function elementDrag(e) {
+      e = e || window.event;
+      e.preventDefault();
+      dragged = true;
+      // calculate the new cursor position:
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      
+      // set the element's new position:
+      elemNode.style.left = (elemNode.offsetLeft - pos1) + "px";
+      elemNode.style.top = (elemNode.offsetTop - pos2) + "px";
+
+      // move all edges
+      const nodeId = elemNode.getAttribute('data-id');
+      const inputConnections = document.querySelectorAll('[data-input-node="' + nodeId + '"]');
+      for (var i = 0; i < inputConnections.length; i++) {
+        const line = inputConnections[i].getElementsByTagName('line')[0];
+        line.setAttribute('x1', +line.getAttribute('x1') - pos1);
+        line.setAttribute('y1', +line.getAttribute('y1') - pos2);
+      }
+      const outputConnections = document.querySelectorAll('[data-output-node="' + nodeId + '"]');
+      for (var i = 0; i < outputConnections.length; i++) {
+        const line = outputConnections[i].getElementsByTagName('line')[0];
+        line.setAttribute('x2', +line.getAttribute('x2') - pos1);
+        line.setAttribute('y2', +line.getAttribute('y2') - pos2);
+      }
+    }
+
+    function closeDragElement() {
+      // stop moving when mouse button is released:
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+
+    // add callback
+    elemNode.onclick = function(e) {
+      if (!dragged && this.callbacks['nodeClicked'] && e.detail === 1) {
+        this.callbacks['nodeClicked'](this.getNode(nodeId));
+      }
+    }.bind(this);
+ 
 
     var elemContainer = document.createElement("div");
     elemContainer.classList.add('container');
@@ -168,19 +244,22 @@ export class Editor {
     elemContainer.appendChild(elemOutputs);
     elemNode.appendChild(elemContainer);
     
-    dragElement(elemNode, 1); // make dragable
     this.container.appendChild(elemNode);
     return nodeId;
   }
   removeNode(node) {
     const nodes = this.container.querySelectorAll('.drawgraph-node[data-id="' + node + '"]')
     if (nodes.length > 0) {
+      const data = this.elementNodeToData(nodes[0]);
       // remove node
       this.container.removeChild(nodes[0]);
       // remove all edges
       const edges = [...this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + node + '"]'), ...this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + node + '"]')]
       for (var i = 0; i < edges.length; i++) {
         this.container.removeChild(edges[i]);
+      }
+      if (this.callbacks['nodeRemoved']) {
+        this.callbacks['nodeRemoved'](data);
       }
     }
   }
@@ -189,19 +268,21 @@ export class Editor {
     var edges = [];
     var elemts = this.container.querySelectorAll('.drawgraph-edge');
     for (var i = 0; i < elemts.length; i++) {
-      const currentElem = elemts[i];
-      edges.push({
-        input: {
-          node: currentElem.getAttribute('data-input-node'),
-          name: currentElem.getAttribute('data-input')
-        },
-        output: {
-          node: currentElem.getAttribute('data-output-node'),
-          name: currentElem.getAttribute('data-output')
-        }
-      });
+      edges.push(this.elementEdgeToData(elemts[i]));
     }
     return edges;
+  }
+  elementEdgeToData(currentElem) {
+    return {
+      input: {
+        node: currentElem.getAttribute('data-input-node'),
+        name: currentElem.getAttribute('data-input')
+      },
+      output: {
+        node: currentElem.getAttribute('data-output-node'),
+        name: currentElem.getAttribute('data-output')
+      }
+    };
   }
   addEdge(from, fromOutput, to, toInput) {
     var lineContainer = document.createElementNS('http://www.w3.org/2000/svg',"svg");
@@ -237,84 +318,25 @@ export class Editor {
     newLine.setAttribute('y2',this.container.offsetTop + elemToNode.offsetTop + elemToInput.offsetTop - elemToInput.getBoundingClientRect().height / 2);
     lineContainer.appendChild(newLine);
     this.container.appendChild(lineContainer);
+    if (this.callbacks['edgeAdded']) {
+      this.callbacks['edgeAdded'](this.elementEdgeToData(lineContainer));
+    }
   }
   removeEdge(from, fromOutput, to, toInput) {
     const edge = this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + from + '"][data-input="' + fromOutput + '"][data-output-node="' + to + '"][data-output="' + toInput + '"]')
     if (edge.length > 0) {
+      const data = this.elementEdgeToData(edge[0]);
       this.container.removeChild(edge[0]);
+      if (this.callbacks['edgeRemoved']) {
+        this.callbacks['edgeRemoved'](data);
+      }
     }
   }
 
-}
-
-export class Node {
-  constructor(title, inputs, outputs) {
-    this.id = uuid();
-    this.title = title;
-    this.x = 0;
-    this.y = 0;
-    this.inputs = inputs;
-    this.outputs = outputs;
-  }
 }
 
 function uuid() {
   return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
   );
-}
-
-function dragElement(elmnt) {
-  var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-  if (elmnt.querySelector('.title')) {
-    elmnt.querySelector('.title').onmousedown = dragMouseDown;
-  } else {
-    elmnt.onmousedown = dragMouseDown;
-  }
-
-  function dragMouseDown(e) {
-    e = e || window.event;
-    e.preventDefault();
-    // get the mouse cursor position at startup:
-    pos3 = e.clientX;
-    pos4 = e.clientY;
-    document.onmouseup = closeDragElement;
-    // call a function whenever the cursor moves:
-    document.onmousemove = elementDrag;
-  }
-
-  function elementDrag(e) {
-    e = e || window.event;
-    e.preventDefault();
-    // calculate the new cursor position:
-    pos1 = pos3 - e.clientX;
-    pos2 = pos4 - e.clientY;
-    pos3 = e.clientX;
-    pos4 = e.clientY;
-    
-    // set the element's new position:
-    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-
-    // move all edges
-    const nodeId = elmnt.getAttribute('data-id');
-    const inputConnections = document.querySelectorAll('[data-input-node="' + nodeId + '"]');
-    for (var i = 0; i < inputConnections.length; i++) {
-      const line = inputConnections[i].getElementsByTagName('line')[0];
-      line.setAttribute('x1', +line.getAttribute('x1') - pos1);
-      line.setAttribute('y1', +line.getAttribute('y1') - pos2);
-    }
-    const outputConnections = document.querySelectorAll('[data-output-node="' + nodeId + '"]');
-    for (var i = 0; i < outputConnections.length; i++) {
-      const line = outputConnections[i].getElementsByTagName('line')[0];
-      line.setAttribute('x2', +line.getAttribute('x2') - pos1);
-      line.setAttribute('y2', +line.getAttribute('y2') - pos2);
-    }
-  }
-
-  function closeDragElement() {
-    // stop moving when mouse button is released:
-    document.onmouseup = null;
-    document.onmousemove = null;
-  }
 }
