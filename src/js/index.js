@@ -46,17 +46,19 @@ export class Editor {
     });
     return {
       id: currentElem.getAttribute('data-id'),
+      data: JSON.parse(currentElem.getAttribute('data-data')),
       title: currentElem.querySelector('.title').innerText,
       inputs, outputs,
       x: currentElem.offsetLeft,
       y: currentElem.offsetTop
     };
   }
-  addNode(title, inputs, outputs, initalX = 0, initalY = 0) {
+  addNode(title, inputs, outputs, data, initalX = 0, initalY = 0) {
     const nodeId = uuid();
     const elemNode = document.createElement("div");
     elemNode.classList.add('drawgraph-node');
     elemNode.setAttribute('data-id', nodeId);
+    elemNode.setAttribute('data-data', JSON.stringify(data));
     elemNode.style.left = initalX + "px";
     elemNode.style.top = initalY + "px";
 
@@ -74,7 +76,7 @@ export class Editor {
     // make dragable
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0, dragged = false;
     elemTitle.onmousedown = dragMouseDown;
-    
+
     function dragMouseDown(e) {
       e = e || window.event;
       e.preventDefault();

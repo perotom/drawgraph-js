@@ -32,9 +32,18 @@
       console.log('removed', edge);
     });
     graph.start();
-    const n1 = graph.addNode('Input', [], [{ name: 'GNSS_Lat'}, { name: 'GNSS_Lon'}, { name: 'GNSS_Alt'}], 20, 10);
-    const n2 = graph.addNode('Calc', [{ name: 'Latitude', maxEdges: 1}, { name: 'Longitude', maxEdges: 1}], [{ name: 'Distance'}, { name: 'Speed'}], 300, 20);
-    const n3 = graph.addNode('Output', [{ name: 'Out1', maxEdges: 1 }, { name: 'Out2', maxEdges: 1 }], [], 600, 20);
+    const n1 = graph.addNode('Input', 
+      [], 
+      [{ name: 'GNSS_Lat'}, { name: 'GNSS_Lon'}, 
+      { name: 'GNSS_Alt'}], { filename: 'hell.csv' }, 20, 10);
+    const n2 = graph.addNode('Calc', 
+      [{ name: 'Latitude', maxEdges: 1}, { name: 'Longitude', maxEdges: 1}], 
+      [{ name: 'Distance'}, { name: 'Speed'}], 
+      {}, 300, 20);
+    const n3 = graph.addNode('Output', 
+      [{ name: 'Out1', maxEdges: 1 }, { name: 'Out2', maxEdges: 1 }], 
+      [], 
+      {}, 600, 20);
     graph.addEdge(n1, 'GNSS_Lat', n2, 'Latitude');
     graph.addEdge(n1, 'GNSS_Lon', n2, 'Longitude');
     graph.addEdge(n2, 'Distance', n3, 'Out1');
