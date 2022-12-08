@@ -15,6 +15,7 @@ $bg-dot-space: 20px;
   linear-gradient($bg-color ($bg-dot-space - $bg-dot-size), transparent 1%) center,
   $bg-dot-color;
 	background-size: $bg-dot-space $bg-dot-space;
+  overflow: hidden;
 }
 
 .drawgraph-node {
@@ -62,6 +63,10 @@ $bg-dot-space: 20px;
     &:hover {
       background-color: cornflowerblue;
     }
+
+    > * {
+      pointer-events: none;
+    }
   }
 
   .output {
@@ -95,4 +100,12 @@ $bg-dot-space: 20px;
   position: absolute;
   overflow: visible !important;
   z-index: 0;
+  pointer-events: none;
+
+  line {
+    stroke: #aaa;
+    stroke-width: 5;
+    stroke-linecap: round;
+    pointer-events: all;
+  }
 }
