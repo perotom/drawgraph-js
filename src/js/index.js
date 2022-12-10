@@ -17,8 +17,8 @@ export class Editor {
        lastX = e.clientX;
        lastY = e.clientY;
        
-       this.container.onmouseup = function(e) {
-        this.container.onmouseup = null;
+       document.onmouseup = function(e) {
+        document.onmouseup = null;
         this.container.onmousemove = null;
       }.bind(this);
       this.container.onmousemove = function(e) {
@@ -89,7 +89,7 @@ export class Editor {
       y: currentElem.offsetTop
     };
   }
-  addNode(title, inputs, outputs, data, initalX = 0, initalY = 0) {
+  addNode(title, inputs, outputs, data, initalX = 0, initalY = 0, removeable = true) {
     const nodeId = uuid();
     const elemNode = document.createElement("div");
     elemNode.classList.add('drawgraph-node');
@@ -102,11 +102,13 @@ export class Editor {
     var elemTitle = document.createElement("div");
     elemTitle.classList.add('title');
     elemTitle.innerText = title;
-    elemTitle.ondblclick = function(e) {
-      e = e || window.event;
-      e.preventDefault();
-      this.removeNode(nodeId);
-    }.bind(this);  
+    if (removeable) {
+      elemTitle.ondblclick = function(e) {
+        e = e || window.event;
+        e.preventDefault();
+        this.removeNode(nodeId);
+      }.bind(this);  
+    }
     elemNode.appendChild(elemTitle);
 
     // make dragable
@@ -117,9 +119,9 @@ export class Editor {
       // get the mouse cursor position at startup:
       pos3 = e.clientX;
       pos4 = e.clientY;
-      this.container.onmouseup = function() {
+      document.onmouseup = function() {
         // stop moving when mouse button is released:
-        this.container.onmouseup = null;
+        document.onmouseup = null;
         this.container.onmousemove = null;
       }.bind(this);
       // call a function whenever the cursor moves:
@@ -139,13 +141,13 @@ export class Editor {
   
         // move all edges
         const nodeId = elemNode.getAttribute('data-id');
-        const inputConnections = document.querySelectorAll('.drawgraph-edge[data-input-node="' + nodeId + '"]');
+        const inputConnections = this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + nodeId + '"]');
         for (var i = 0; i < inputConnections.length; i++) {
           const line = inputConnections[i].getElementsByTagName('line')[0];
           line.setAttribute('x1', +line.getAttribute('x1') - pos1);
           line.setAttribute('y1', +line.getAttribute('y1') - pos2);
         }
-        const outputConnections = document.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"]');
+        const outputConnections = this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"]');
         for (var i = 0; i < outputConnections.length; i++) {
           const line = outputConnections[i].getElementsByTagName('line')[0];
           line.setAttribute('x2', +line.getAttribute('x2') - pos1);
@@ -158,6 +160,11 @@ export class Editor {
     // add callback
     elemNode.onclick = function(e) {
       if (!dragged && this.callbacks['nodeClicked'] && e.detail === 1) {
+        const selectedNodes = this.container.querySelectorAll('.drawgraph-node.selected');
+        for (var i = 0; i < selectedNodes.length; i++) {
+          selectedNodes[i].classList.remove('selected');
+        }
+        this.container.querySelector('.drawgraph-node[data-id="' + nodeId + '"]').classList.add('selected');
         this.callbacks['nodeClicked'](this.getNode(nodeId));
       }
     }.bind(this);
@@ -313,8 +320,8 @@ export class Editor {
       lineContainer.appendChild(newLine);
       this.container.appendChild(lineContainer);
 
-      this.container.onmouseup = function(e) {
-        this.container.onmouseup = null;
+      document.onmouseup = function(e) {
+        document.onmouseup = null;
         this.container.onmousemove = null;
         this.container.removeChild(this.container.querySelector('#drawgraph-edge-current'));
       }.bind(this);
