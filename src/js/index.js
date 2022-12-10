@@ -11,10 +11,6 @@ export class Editor {
     this.callbacks[eventName] = callback;
   }
 
-  start () {
-    console.info("Start Drawgraph!!");
-  }
-
   getNodes() {
     var nodes = [];
     var elemts = this.container.querySelectorAll('.drawgraph-node');
@@ -105,13 +101,13 @@ export class Editor {
 
       // move all edges
       const nodeId = elemNode.getAttribute('data-id');
-      const inputConnections = document.querySelectorAll('[data-input-node="' + nodeId + '"]');
+      const inputConnections = document.querySelectorAll('.drawgraph-edge[data-input-node="' + nodeId + '"]');
       for (var i = 0; i < inputConnections.length; i++) {
         const line = inputConnections[i].getElementsByTagName('line')[0];
         line.setAttribute('x1', +line.getAttribute('x1') - pos1);
         line.setAttribute('y1', +line.getAttribute('y1') - pos2);
       }
-      const outputConnections = document.querySelectorAll('[data-output-node="' + nodeId + '"]');
+      const outputConnections = document.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"]');
       for (var i = 0; i < outputConnections.length; i++) {
         const line = outputConnections[i].getElementsByTagName('line')[0];
         line.setAttribute('x2', +line.getAttribute('x2') - pos1);
@@ -135,118 +131,30 @@ export class Editor {
 
     var elemContainer = document.createElement("div");
     elemContainer.classList.add('container');
-    // inputs
+
     var elemInputs = document.createElement("div");
     elemInputs.classList.add('inputs');
-    for (var i = 0; i < inputs.length; i++) {
-      var elemInput = document.createElement("div");
-      elemInput.classList.add('input');
-      elemInput.setAttribute('data-input', inputs[i].name);
-      if (inputs[i].maxEdges) {
-        elemInput.setAttribute('data-max-edges', inputs[i].maxEdges);
-      }
-      var elemLabel = document.createElement("span");
-      elemLabel.innerText = inputs[i].name;
-      elemInput.appendChild(elemLabel);
-      elemInput.onmouseup = function(e) {
-        e = e || window.event;
-        e.preventDefault();
-
-        const currentEdge = document.getElementById('drawgraph-edge-current');
-        if (!currentEdge) { // no current edge was draw, could be because of max edges in output node
-          return;
-        }
-
-        // check max edges
-        const maxEdges = e.target.getAttribute('data-max-edges');
-        const nodeId = e.target.parentNode.parentNode.parentNode.getAttribute('data-id');
-        const inputId = e.target.getAttribute('data-input');
-        if (maxEdges && this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"][data-output="' + inputId + '"]').length >= maxEdges) {
-          console.trace('Max edges');
-          return;
-        }
-
-        // check duplicate
-        const edgeInputNode = currentEdge.getAttribute('data-input-node');
-        const edgeInput = currentEdge.getAttribute('data-input');
-        if (this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"][data-output="' + inputId + '"][data-input-node="' + edgeInputNode + '"][data-input="' + edgeInput + '"]').length > 0) {
-          console.trace('Duplicate');
-          return;
-        }
-
-        // convert current edge to proper
-        this.addEdge(edgeInputNode, edgeInput, nodeId, inputId);
-      }.bind(this);
-      elemInputs.appendChild(elemInput);
-    }
     elemContainer.appendChild(elemInputs);
-    // content
+
     var elemContent = document.createElement("div");
     elemContent.classList.add('content');
     elemContainer.appendChild(elemContent);
-    // outputs
+    
     var elemOutputs = document.createElement("div");
     elemOutputs.classList.add('outputs');
-    for (var i = 0; i < outputs.length; i++) {
-      var elemOutput = document.createElement("div");
-      elemOutput.classList.add('output');
-      elemOutput.setAttribute('data-output', outputs[i].name);
-      if (outputs[i].maxEdges) {
-        elemOutput.setAttribute('data-max-edges', outputs[i].maxEdges);
-      }
-      var elemLabel = document.createElement("span");
-      elemLabel.innerText = outputs[i].name;
-      elemOutput.appendChild(elemLabel);
-      // on draw new edge
-      elemOutput.onmousedown = function(e) {
-        e = e || window.event;
-        e.preventDefault();
-        
-        // check max edges
-        const maxEdges = e.target.getAttribute('data-max-edges');
-        const nodeId = e.target.parentNode.parentNode.parentNode.getAttribute('data-id');
-        const outputId = e.target.getAttribute('data-output');
-        if (maxEdges && this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + nodeId + '"][data-input="' + outputId + '"]').length >= maxEdges) {
-          console.trace('Max edges');
-          return;
-        }
-
-        var startX = e.clientX - this.container.offsetLeft;
-        var startY = e.clientY - this.container.offsetTop;
-        // create new svg elem
-        var lineContainer = document.createElementNS('http://www.w3.org/2000/svg',"svg");
-        lineContainer.classList.add('drawgraph-edge');
-        lineContainer.setAttribute('data-input', outputId);
-        lineContainer.setAttribute('data-input-node', nodeId);
-        lineContainer.id = 'drawgraph-edge-current'
-        var newLine = document.createElementNS('http://www.w3.org/2000/svg','line');
-        const outputBox = e.target.getBoundingClientRect();
-        newLine.setAttribute('x1',outputBox.x + outputBox.width / 2);
-        newLine.setAttribute('y1',outputBox.y - outputBox.height / 2);
-        newLine.setAttribute('x2',startX);
-        newLine.setAttribute('y2',startY);
-        lineContainer.appendChild(newLine);
-        this.container.appendChild(lineContainer);
-
-        document.onmouseup = function(e) {
-          document.onmouseup = null;
-          document.onmousemove = null;
-          this.container.removeChild(document.getElementById('drawgraph-edge-current'))
-        }.bind(this);
-        document.onmousemove = function(e) {
-          e = e || window.event;
-          e.preventDefault();
-          var line = document.getElementById('drawgraph-edge-current').getElementsByTagName('line')[0];
-          line.setAttribute('x2',e.clientX - this.container.offsetLeft);
-          line.setAttribute('y2',e.clientY - this.container.offsetTop);
-        }.bind(this);
-      }.bind(this);
-      elemOutputs.appendChild(elemOutput);
-    }
     elemContainer.appendChild(elemOutputs);
+
     elemNode.appendChild(elemContainer);
-    
     this.container.appendChild(elemNode);
+
+    // add inputs
+    for (var i = 0; i < inputs.length; i++) {
+      this.addNodeInput(nodeId, inputs[i]);
+    }
+    // add outputs
+    for (var i = 0; i < outputs.length; i++) {
+      this.addNodeOutput(nodeId, outputs[i]);
+    }
     return nodeId;
   }
   removeNode(node) {
@@ -264,6 +172,147 @@ export class Editor {
         this.callbacks['nodeRemoved'](data);
       }
     }
+  }
+
+  addNodeInput(node, input) {
+    var elemInputs = this.container.querySelector('.drawgraph-node[data-id="' + node + '"] .inputs');
+    
+    var elemInput = document.createElement("div");
+    elemInput.classList.add('input');
+    elemInput.setAttribute('data-input', input.name);
+    if (input.maxEdges) {
+      elemInput.setAttribute('data-max-edges', input.maxEdges);
+    }
+    var elemLabel = document.createElement("span");
+    elemLabel.innerText = input.name;
+    elemInput.appendChild(elemLabel);
+    elemInput.onmouseup = function(e) {
+      e = e || window.event;
+      e.preventDefault();
+
+      const currentEdge = document.getElementById('drawgraph-edge-current');
+      if (!currentEdge) { // no current edge was draw, could be because of max edges in output node
+        return;
+      }
+
+      // check max edges
+      const maxEdges = e.target.getAttribute('data-max-edges');
+      const nodeId = e.target.parentNode.parentNode.parentNode.getAttribute('data-id');
+      const inputId = e.target.getAttribute('data-input');
+      if (maxEdges && this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"][data-output="' + inputId + '"]').length >= maxEdges) {
+        console.trace('Max edges');
+        return;
+      }
+
+      // check duplicate
+      const edgeInputNode = currentEdge.getAttribute('data-input-node');
+      const edgeInput = currentEdge.getAttribute('data-input');
+      if (this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"][data-output="' + inputId + '"][data-input-node="' + edgeInputNode + '"][data-input="' + edgeInput + '"]').length > 0) {
+        console.trace('Duplicate');
+        return;
+      }
+
+      // convert current edge to proper
+      this.addEdge(edgeInputNode, edgeInput, nodeId, inputId);
+    }.bind(this);
+
+    elemInputs.appendChild(elemInput);
+    this.alignEdges(node);
+  }
+  removeNodeInput(node, input) {
+    var elem = this.container.querySelector('.drawgraph-node[data-id="' + node + '"] .inputs');
+    if (!elem) {
+      return;
+    }
+    var elemInput = elem.querySelector('.input[data-input="' + input + '"');
+    if (!elemInput) {
+      return;
+    }
+    // remove all edges
+    const edges = Array.from(this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + node + '"][data-output="' + input + '"]'));
+    for (var i = 0; i < edges.length; i++) {
+      this.container.removeChild(edges[i]);
+    }
+    elem.removeChild(elemInput);
+    this.alignEdges(node);
+  }
+  addNodeOutput(node, output) {
+    var elemOutputs = this.container.querySelector('.drawgraph-node[data-id="' + node + '"] .outputs');
+    
+    var elemOutput = document.createElement("div");
+    elemOutput.classList.add('output');
+    elemOutput.setAttribute('data-output', output.name);
+    if (output.maxEdges) {
+      elemOutput.setAttribute('data-max-edges', output.maxEdges);
+    }
+    var elemLabel = document.createElement("span");
+    elemLabel.innerText = output.name;
+    elemOutput.appendChild(elemLabel);
+    // on draw new edge
+    elemOutput.onmousedown = function(e) {
+      e = e || window.event;
+      e.preventDefault();
+      
+      // check max edges
+      const maxEdges = e.target.getAttribute('data-max-edges');
+      const nodeId = e.target.parentNode.parentNode.parentNode.getAttribute('data-id');
+      const outputId = e.target.getAttribute('data-output');
+      if (maxEdges && this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + nodeId + '"][data-input="' + outputId + '"]').length >= maxEdges) {
+        console.trace('Max edges');
+        return;
+      }
+
+      var startX = e.clientX + window.scrollX - this.container.offsetLeft;
+      var startY = e.clientY + window.scrollY - this.container.offsetTop;
+      // create new svg elem
+      var lineContainer = document.createElementNS('http://www.w3.org/2000/svg',"svg");
+      lineContainer.classList.add('drawgraph-edge');
+      lineContainer.setAttribute('data-input', outputId);
+      lineContainer.setAttribute('data-input-node', nodeId);
+      lineContainer.id = 'drawgraph-edge-current'
+      var newLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+      const elemFromOutput = e.target;
+      const elemFromNode = e.target.parentNode.parentNode.parentNode;
+
+      newLine.setAttribute('x1',elemFromNode.offsetLeft + elemFromOutput.offsetLeft + elemFromOutput.getBoundingClientRect().width / 2);
+      newLine.setAttribute('y1',elemFromNode.offsetTop + elemFromOutput.offsetTop + elemFromOutput.getBoundingClientRect().height / 2);
+      newLine.setAttribute('x2',startX);
+      newLine.setAttribute('y2',startY);
+      lineContainer.appendChild(newLine);
+      this.container.appendChild(lineContainer);
+
+      document.onmouseup = function(e) {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        this.container.removeChild(document.getElementById('drawgraph-edge-current'))
+      }.bind(this);
+      document.onmousemove = function(e) {
+        e = e || window.event;
+        e.preventDefault();
+        var line = document.getElementById('drawgraph-edge-current').getElementsByTagName('line')[0];
+        line.setAttribute('x2',e.clientX + window.scrollX - this.container.offsetLeft);
+        line.setAttribute('y2',e.clientY + window.scrollY - this.container.offsetTop);
+      }.bind(this);
+    }.bind(this);
+    elemOutputs.appendChild(elemOutput);
+    this.alignEdges(node);
+  }
+  removeNodeOutput(node, output) {
+    var elem = this.container.querySelector('.drawgraph-node[data-id="' + node + '"] .outputs');
+    if (!elem) {
+      return;
+    }
+    var elemOutput = elem.querySelector('.output[data-output="' + output + '"');
+    if (!elemOutput) {
+      return;
+    }
+    // remove all edges
+    const edges = Array.from(this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + node + '"][data-input="' + output + '"]'));
+    for (var i = 0; i < edges.length; i++) {
+      this.container.removeChild(edges[i]);
+    }
+    elem.removeChild(elemOutput);
+    this.alignEdges(node);
   }
 
   getEdges() {
@@ -294,14 +343,6 @@ export class Editor {
     lineContainer.setAttribute('data-output', toInput);
     lineContainer.setAttribute('data-output-node', to);
     var newLine = document.createElementNS('http://www.w3.org/2000/svg','line');
-    const elemFromNode = this.container.querySelector('[data-id="' + from + '"]');
-    const elemFromOutput = elemFromNode.querySelector('[data-output="' + fromOutput + '"]');
-    const elemToNode = this.container.querySelector('[data-id="' + to + '"]');
-    const elemToInput = elemToNode.querySelector('[data-input="' + toInput + '"]');
-    if (!elemFromNode || !elemFromOutput || !elemToNode || !elemToInput) {
-      console.trace('Node or edge not found');
-      return;
-    }
 
     newLine.ondblclick = function(e) {
       e = e || window.event;
@@ -314,10 +355,7 @@ export class Editor {
       );
     }.bind(this);  
 
-    newLine.setAttribute('x1',this.container.offsetLeft + elemFromNode.offsetLeft + elemFromOutput.offsetLeft + elemFromOutput.getBoundingClientRect().width / 2);
-    newLine.setAttribute('y1',this.container.offsetTop + elemFromNode.offsetTop + elemFromOutput.offsetTop - elemFromOutput.getBoundingClientRect().height / 2);
-    newLine.setAttribute('x2',this.container.offsetLeft + elemToNode.offsetLeft + elemToInput.offsetLeft + elemToInput.getBoundingClientRect().width / 2);
-    newLine.setAttribute('y2',this.container.offsetTop + elemToNode.offsetTop + elemToInput.offsetTop - elemToInput.getBoundingClientRect().height / 2);
+    this.alignEdge(newLine, from, fromOutput, to, toInput);
     lineContainer.appendChild(newLine);
     this.container.appendChild(lineContainer);
     if (this.callbacks['edgeAdded']) {
@@ -332,6 +370,34 @@ export class Editor {
       if (this.callbacks['edgeRemoved']) {
         this.callbacks['edgeRemoved'](data);
       }
+    }
+  }
+  alignEdge(line, from, fromOutput, to, toInput) {
+    const elemFromNode = this.container.querySelector('[data-id="' + from + '"]');
+    const elemFromOutput = elemFromNode.querySelector('[data-output="' + fromOutput + '"]');
+    const elemToNode = this.container.querySelector('[data-id="' + to + '"]');
+    const elemToInput = elemToNode.querySelector('[data-input="' + toInput + '"]');
+    line.setAttribute('x1',elemFromNode.offsetLeft + elemFromOutput.offsetLeft + elemFromOutput.getBoundingClientRect().width / 2);
+    line.setAttribute('y1',elemFromNode.offsetTop + elemFromOutput.offsetTop + elemFromOutput.getBoundingClientRect().height / 2);
+    line.setAttribute('x2',elemToNode.offsetLeft + elemToInput.offsetLeft + elemToInput.getBoundingClientRect().width / 2);
+    line.setAttribute('y2',elemToNode.offsetTop + elemToInput.offsetTop + elemToInput.getBoundingClientRect().height / 2);
+  }
+  alignEdges(node) {
+    const outputConnections = document.querySelectorAll('.drawgraph-edge[data-output-node="' + node + '"]');
+    for (var i = 0; i < outputConnections.length; i++) {
+      this.alignEdge(outputConnections[i].querySelector('line'),
+        outputConnections[i].getAttribute('data-input-node'),
+        outputConnections[i].getAttribute('data-input'), 
+        outputConnections[i].getAttribute('data-output-node'),
+        outputConnections[i].getAttribute('data-output'));
+    }
+    const inputConnections = document.querySelectorAll('.drawgraph-edge[data-input-node="' + node + '"]');
+    for (var i = 0; i < inputConnections.length; i++) {
+      this.alignEdge(inputConnections[i].querySelector('line'),
+        inputConnections[i].getAttribute('data-input-node'),
+        inputConnections[i].getAttribute('data-input'), 
+        inputConnections[i].getAttribute('data-output-node'),
+        inputConnections[i].getAttribute('data-output'));
     }
   }
 

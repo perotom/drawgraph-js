@@ -11,10 +11,16 @@
   </style>
 </head>
 <body>
+  <button onclick="addNodeInput()">Add In</button>
+  <button onclick="removeNodeInput()">Remove In</button>
+  <button onclick="addNodeOutput()">Add Out</button>
+  <button onclick="removeNodeOutput()">Remove Out</button>
   <button onclick="printAll()">Print</button>
   <button onclick="exportTest()">Export</button>
   <button onclick="importTest()">Import</button>
-  <div id="graph" class="drawgraph-editor">
+  <div style="padding: 50px; background-color: #ccc; height: 400px">
+    <div id="graph" class="drawgraph-editor">
+    </div>
   </div>
   <script>
     var elemGraph = document.getElementById("graph");
@@ -31,14 +37,14 @@
     graph.on('edgeRemoved', (edge) => {
       console.log('removed', edge);
     });
-    graph.start();
+
     const n1 = graph.addNode('Input', 
       [], 
       [{ name: 'GNSS_Lat'}, { name: 'GNSS_Lon'}, 
       { name: 'GNSS_Alt'}], { filename: 'hell.csv' }, 20, 10);
     const n2 = graph.addNode('Calc', 
       [{ name: 'Latitude', maxEdges: 1}, { name: 'Longitude', maxEdges: 1}], 
-      [{ name: 'Distance'}, { name: 'Speed'}], 
+      [{ name: 'Distance'}, { name: 'Speed'}, { name: 'test'}, { name: 'test2'}], 
       {}, 300, 20);
     const n3 = graph.addNode('Output', 
       [{ name: 'Out1', maxEdges: 1 }, { name: 'Out2', maxEdges: 1 }], 
@@ -49,6 +55,18 @@
     graph.addEdge(n2, 'Distance', n3, 'Out1');
     graph.addEdge(n2, 'Speed', n3, 'Out2');
     
+    function addNodeInput() {
+      graph.addNodeInput(n2, {name: 'Altitude', maxEdges: 1});
+    }
+    function removeNodeInput() {
+      graph.removeNodeInput(n2, 'Altitude');
+    }
+    function addNodeOutput() {
+      graph.addNodeOutput(n2, {name: 'Hello', maxEdges: 1});
+    }
+    function removeNodeOutput() {
+      graph.removeNodeOutput(n2, 'Hello');
+    }
     function printAll() {
       console.log(graph.getNodes());
       console.log(graph.getEdges());
