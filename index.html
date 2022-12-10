@@ -7,7 +7,7 @@
   <script src="dist/drawgraph.umd.min.js"></script>
   <link rel="stylesheet" type="text/css" href="dist/drawgraph.min.css" />
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; font-family: Verdana, Geneva, Tahoma, sans-serif;}
+    html, body {  background-color: #ccc; height: 100%; margin: 0; padding: 0; font-family: Verdana, Geneva, Tahoma, sans-serif;}
   </style>
 </head>
 <body>
@@ -18,9 +18,7 @@
   <button onclick="printAll()">Print</button>
   <button onclick="exportTest()">Export</button>
   <button onclick="importTest()">Import</button>
-  <div style="padding: 50px; background-color: #ccc; height: 400px">
-    <div id="graph" class="drawgraph-editor">
-    </div>
+  <div id="graph" class="drawgraph-editor">
   </div>
   <script>
     var elemGraph = document.getElementById("graph");
