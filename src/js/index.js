@@ -198,6 +198,12 @@ export class Editor {
     }
     return nodeId;
   }
+  updateNodeData(id, data) {
+    var elemt = this.container.querySelector('.drawgraph-node[data-id="' + id + '"]');
+    if (elemt) {
+      elemt.setAttribute('data-data', JSON.stringify(data));
+    }
+  }
   removeNode(node) {
     const nodes = this.container.querySelectorAll('.drawgraph-node[data-id="' + node + '"]')
     if (nodes.length > 0) {
