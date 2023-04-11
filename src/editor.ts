@@ -298,11 +298,11 @@ export default class Editor {
 		this.alignEdges(node);
 	}
 	removeNodeInput(node: string, inputId: string) {
-		var elem = this.container.querySelector('.drawgraph-node[data-id="' + node + '"] .inputs');
+		const elem = this.container.querySelector('.drawgraph-node[data-id="' + node + '"] .inputs');
 		if (!elem) {
 			return;
 		}
-		var elemInput = elem.querySelector('.input[data-input="' + inputId + '"');
+		const elemInput = elem.querySelector('.input[data-input="' + inputId + '"');
 		if (!elemInput) {
 			return;
 		}
@@ -350,6 +350,7 @@ export default class Editor {
 			lineContainer.id = 'drawgraph-edge-current'
 			var newLine = document.createElementNS('http://www.w3.org/2000/svg','line');
 			const elemFromOutput = target;
+			elemFromOutput.classList.add('current');
 			const elemFromNode = target.parentElement?.parentElement?.parentElement;
 			
 			newLine.setAttribute('x1', String((elemFromNode?.offsetLeft ?? 0) + elemFromOutput?.offsetLeft + elemFromOutput.getBoundingClientRect().width / 2));
@@ -365,6 +366,7 @@ export default class Editor {
 				const currentEdge = this.container.querySelector('#drawgraph-edge-current');
 				if (currentEdge) {
 					this.container.removeChild(currentEdge);
+					elemFromOutput.classList.remove('current');
 				}
 			};
 			this.container.onmousemove = (e: MouseEvent) => {
@@ -440,6 +442,10 @@ export default class Editor {
 		this.alignEdge(newLine, from, portOutput, to, portInput);
 		lineContainer.appendChild(newLine);
 		this.container.appendChild(lineContainer);
+		// add class to node ports
+		this.container.querySelector('.drawgraph-node[data-id="' + from + '"] .outputs .output[data-output="' + portOutput + '"')?.classList.add('used');
+		this.container.querySelector('.drawgraph-node[data-id="' + to + '"] .inputs .input[data-input="' + portInput + '"')?.classList.add('used');
+
 		if (this.callbacks['edgeAdded']) {
 			this.callbacks['edgeAdded'](this.elementEdgeToData(lineContainer));
 		}
@@ -449,6 +455,13 @@ export default class Editor {
 		if (edge.length > 0) {
 			const data = this.elementEdgeToData(edge[0]);
 			this.container.removeChild(edge[0]);
+			// remove class to node ports
+			if (this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + from + '"][data-input="' + portOutput + '"]').length == 0) {
+				this.container.querySelector('.drawgraph-node[data-id="' + from + '"] .outputs .output[data-output="' + portOutput + '"')?.classList.remove('used');
+			}
+			if (this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + to + '"][data-output="' + portInput + '"]').length == 0) {
+				this.container.querySelector('.drawgraph-node[data-id="' + to + '"] .inputs .input[data-input="' + portInput + '"')?.classList.remove('used');
+			}
 			if (this.callbacks['edgeRemoved']) {
 				this.callbacks['edgeRemoved'](data);
 			}
