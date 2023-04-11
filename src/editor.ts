@@ -189,17 +189,18 @@ export default class Editor {
 	
 		// add callback
 		elemNode.onclick = (e: MouseEvent) => {
-		  if (!dragged && this.callbacks['nodeClicked'] && e.detail === 1) {
-			const selectedNodes = this.container.querySelectorAll('.drawgraph-node.selected');
-			for (var i = 0; i < selectedNodes.length; i++) {
-			  selectedNodes[i].classList.remove('selected');
+			if (!dragged && e.button === 0) {
+				const selectedNodes = this.container.querySelectorAll('.drawgraph-node.selected');
+				for (var i = 0; i < selectedNodes.length; i++) {
+					selectedNodes[i].classList.remove('selected');
+				}
+				this.container.querySelector('.drawgraph-node[data-id="' + nodeId + '"]')?.classList.add('selected');
+				if (this.callbacks['nodeClicked']) {
+					this.callbacks['nodeClicked'](this.getNode(nodeId));
+				}
 			}
-			this.container.querySelector('.drawgraph-node[data-id="' + nodeId + '"]')?.classList.add('selected');
-			this.callbacks['nodeClicked'](this.getNode(nodeId));
-		  }
 		};
 	 
-	
 		var elemContainer = document.createElement("div");
 		elemContainer.classList.add('container');
 	
@@ -243,7 +244,12 @@ export default class Editor {
 			// remove all edges
 			const edges = this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + node + '"], .drawgraph-edge[data-output-node="' + node + '"]');
 			for (var i = 0; i < edges.length; i++) {
-				this.container.removeChild(edges[i]);
+				this.removeEdge(
+					edges[i].getAttribute('data-input-node')!,
+					edges[i].getAttribute('data-input')!,
+					edges[i].getAttribute('data-output-node')!,
+					edges[i].getAttribute('data-output')!
+				);
 			}
 			if (this.callbacks['nodeRemoved']) {
 				this.callbacks['nodeRemoved'](data);
@@ -342,6 +348,12 @@ export default class Editor {
 				console.trace('Max edges');
 				return;
 			}
+			// set all inputs to disabled during dragging
+			const nodePortsDisable = Array.from(this.container.querySelectorAll('.drawgraph-node .outputs .output'));
+			for (var i = 0; i < nodePortsDisable.length; i++) {
+				nodePortsDisable[i].classList.add('disabled');
+			}
+
 			// create new svg elem
 			var lineContainer = document.createElementNS('http://www.w3.org/2000/svg',"svg");
 			lineContainer.classList.add('drawgraph-edge');
@@ -367,6 +379,10 @@ export default class Editor {
 				if (currentEdge) {
 					this.container.removeChild(currentEdge);
 					elemFromOutput.classList.remove('current');
+				}
+				const nodePortsDisable = Array.from(this.container.querySelectorAll('.drawgraph-node .disabled'));
+				for (var i = 0; i < nodePortsDisable.length; i++) {
+					nodePortsDisable[i].classList.remove('disabled');
 				}
 			};
 			this.container.onmousemove = (e: MouseEvent) => {

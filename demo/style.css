@@ -69,17 +69,23 @@
     margin-bottom: 6px
 }
 
-.drawgraph-node .input:hover,
+.drawgraph-node .input:hover:not(.disabled),
+.drawgraph-node .input.used:hover:not(.disabled),
 .drawgraph-node .input.current,
-.drawgraph-node .output:hover,
+.drawgraph-node .output:hover:not(.disabled),
+.drawgraph-node .output.used:hover:not(.disabled),
 .drawgraph-node .output.current {
-    background-color: #0080ff !important;
-    border: 2px solid #0060c0 !important;
+    background-color: #0080ff;
+    border: 2px solid #0060c0;
 }
 .drawgraph-node .input.used,
 .drawgraph-node .output.used {
     background-color: #ccc;
     border: 2px solid #888;
+}
+.drawgraph-node .input.disabled > span,
+.drawgraph-node .output.disabled > span {
+    opacity: 0.5;
 }
 
 .drawgraph-node .input > *,
