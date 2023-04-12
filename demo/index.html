@@ -26,18 +26,18 @@
       var elemGraph = document.getElementById("graph");
       const graph = new window["drawgraph"].Editor(elemGraph);
       
-      graph.on('nodeClicked', (node) => {
+      graph.onNodeClicked = (node) => {
         console.log('clicked', node);
-      });
-      graph.on('nodeRemoved', (node) => {
+      };
+      graph.onNodeRemoved = (node) => {
         console.log('removed', node);
-      });
-      graph.on('edgeAdded', (edge) => {
+      };
+      graph.onEdgeAdded = (edge) => {
         console.log('added', edge);
-      });
-      graph.on('edgeRemoved', (edge) => {
+      };
+      graph.onEdgeRemoved = (edge) => {
         console.log('removed', edge);
-      });
+      };
 
       const n1 = graph.addNode({
         title: 'Input',
@@ -47,7 +47,7 @@
       const n2 = graph.addNode({
         title: 'Calc',
         inputs: [{ name: 'Latitude', maxEdges: 1}, { name: 'Longitude', maxEdges: 1}],
-        outputs: [{ name: 'Distance'}, { name: 'Speed'}, { name: 'test'}, { name: 'test2'}]
+        outputs: [{ name: 'Distance', renameable: true }, { name: 'Speed', renameable: true }, { name: 'test', renameable: true }, { name: 'test2', renameable: true }]
       }, 300, 20);
       const n3 = graph.addNode({
         title: 'Output',

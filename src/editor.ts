@@ -4,15 +4,16 @@ export type Node = {
     id: string | null,
 	data: any | null,
 	title: string,
-	inputs: any, 
-	outputs: any,
+	inputs: NodePort[], 
+	outputs: NodePort[],
 	x: number,
 	y: number
 };
 
 export type NodePort = {
     name: string,
-	maxEdges: number
+	maxEdges: number,
+	renameable: boolean
 };
 
 export type Edge = {
@@ -27,15 +28,17 @@ export type EdgePort = {
 
 export default class Editor {
 	
-	callbacks = new Map<string, () => void>();
 	container: HTMLElement;
+	public onNodeClicked?: (node: Node) => void;
+	public onNodeRemoved?: (node: Node) => void;
+	public onEdgeAdded?: (edge: Edge) => void;
+	public onEdgeRemoved?: (edge: Edge) => void;
 
 	constructor(container: HTMLElement) {
 		this.container = container;
 
 		var lastX: number, lastY: number;
 		this.container.onmousedown = (e: MouseEvent) => {
-			e.preventDefault();
 			if (e.button != 0) {
 				return;
 			}
@@ -51,16 +54,15 @@ export default class Editor {
 				this.container.onmousemove = null;
 			}
 			this.container.onmousemove = (e: MouseEvent) => {
-				e.preventDefault();
 				// move all nodes
-				const nodes = this.container.querySelectorAll<HTMLElement>('.drawgraph-node');
+				const nodes = this.container.querySelectorAll<HTMLElement>(".drawgraph-node");
 				for (var i = 0; i < nodes.length; i++) {
 					const elemNode = nodes[i];
 					elemNode.style.left = (+elemNode.style.left.replace('px', '') + (e.clientX - lastX)) + "px";
 					elemNode.style.top = (+elemNode.style.top.replace('px', '') + (e.clientY - lastY)) + "px";
 				}
 				// move all edges
-				const edges = this.container.querySelectorAll<HTMLElement>('.drawgraph-edge line');
+				const edges = this.container.querySelectorAll<HTMLElement>(".drawgraph-edge line");
 				for (var i = 0; i < edges.length; i++) {
 					const elemEdge = edges[i];
 					elemEdge.setAttribute('x1', String(+(elemEdge.getAttribute('x1') ?? 0) + (e.clientX - lastX)));
@@ -73,15 +75,11 @@ export default class Editor {
 			}
 		}
 	}
-	
-	on(eventName: string, callback: () => void) {
-		this.callbacks.set(eventName, callback);
-	}
 
 	// node functions
 	getNodes(): Node[] {
 		var nodes: Node[] = [];
-		var elemts = this.container.querySelectorAll<HTMLElement>('.drawgraph-node');
+		var elemts = this.container.querySelectorAll<HTMLElement>(".drawgraph-node");
 		for (var i = 0; i < elemts.length; i++) {
 			const currentElem = elemts[i];
 			nodes.push(this.elementNodeToData(currentElem));
@@ -89,29 +87,29 @@ export default class Editor {
 		return nodes;
 	}
 	getNode(id: string): Node | null {
-		var elemt = this.container.querySelector<HTMLElement>('.drawgraph-node[data-id="' + id + '"]');
+		var elemt = this.container.querySelector<HTMLElement>(".drawgraph-node[data-id='" + id + "']");
 		if (elemt) {
 			return this.elementNodeToData(elemt);
 		}
 		return null;
 	}
 	private elementNodeToData(currentElem: HTMLElement): Node {
-		const inputs = Array.from(currentElem.querySelectorAll('.input')).map(n => {
+		const inputs = Array.from(currentElem.querySelectorAll(".input")).map(n => {
 			return {
-				name: n.getAttribute('data-input'),
+				name: n.getAttribute('data-input')!,
 				maxEdges: +(n.getAttribute('data-max-edges') ?? 0)
-			};
+			} as NodePort;
 		});
-		const outputs = Array.from(currentElem.querySelectorAll('.output')).map(n => {
+		const outputs = Array.from(currentElem.querySelectorAll(".output")).map(n => {
 			return {
-			name: n.getAttribute('data-output'),
-			maxEdges: +(n.getAttribute('data-max-edges') ?? 0)
-			};
+				name: n.getAttribute('data-output')!,
+				maxEdges: +(n.getAttribute('data-max-edges') ?? 0)
+			} as NodePort;
 		});
 		return {
 			id: currentElem.getAttribute('data-id'),
 			data: currentElem.getAttribute('data-data') ? JSON.parse(currentElem.getAttribute('data-data') || '') : null,
-			title: currentElem.querySelector<HTMLElement>('.title')?.innerText!,
+			title: currentElem.querySelector<HTMLElement>(".title")?.innerText!,
 			inputs, outputs,
 			x: currentElem.offsetLeft,
 			y: currentElem.offsetTop
@@ -134,7 +132,6 @@ export default class Editor {
 		elemTitle.innerText = node.title;
 		if (removeable) {
 		  elemTitle.ondblclick = (e: MouseEvent) => {
-			e.preventDefault();
 			this.removeNode(nodeId);
 		  };  
 		}
@@ -143,60 +140,59 @@ export default class Editor {
 		// make dragable
 		var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0, dragged = false;
 		elemTitle.onmousedown = (e: MouseEvent) => {
-		  e.preventDefault();
-		  if (e.button != 0) {
-			  return;
-		  }
-		  // get the mouse cursor position at startup:
-		  pos3 = e.clientX;
-		  pos4 = e.clientY;
-		  document.onmouseup = (e: MouseEvent) => {
-			// stop moving when mouse button is released:
-			document.onmouseup = null;
-			this.container.onmousemove = null;
-		  };
-		  // call a function whenever the cursor moves:
-		  this.container.onmousemove = (e: MouseEvent) => {
-			e.preventDefault();
-			dragged = true;
-			// calculate the new cursor position:
-			pos1 = pos3 - e.clientX;
-			pos2 = pos4 - e.clientY;
+			if (e.button != 0) {
+				return;
+			}
+			// get the mouse cursor position at startup:
 			pos3 = e.clientX;
 			pos4 = e.clientY;
-			
-			// set the element's new position:
-			elemNode.style.left = (elemNode.offsetLeft - pos1) + "px";
-			elemNode.style.top = (elemNode.offsetTop - pos2) + "px";
-	  
-			// move all edges
-			const nodeId = elemNode.getAttribute('data-id');
-			const inputConnections = this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + nodeId + '"]');
-			for (var i = 0; i < inputConnections.length; i++) {
-			  const line = inputConnections[i].getElementsByTagName('line')[0];
-			  line.setAttribute('x1', String(+(line.getAttribute('x1') ?? 0) - pos1));
-			  line.setAttribute('y1', String(+(line.getAttribute('y1') ?? 0) - pos2));
-			}
-			const outputConnections = this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"]');
-			for (var i = 0; i < outputConnections.length; i++) {
-			  const line = outputConnections[i].getElementsByTagName('line')[0];
-			  line.setAttribute('x2', String(+(line.getAttribute('x2') ?? 0) - pos1));
-			  line.setAttribute('y2', String(+(line.getAttribute('y2') ?? 0) - pos2));
-			}
-		  };
-		  dragged = false;
+			document.onmouseup = (e: MouseEvent) => {
+				// stop moving when mouse button is released:
+				document.onmouseup = null;
+				this.container.onmousemove = null;
+			};
+			// call a function whenever the cursor moves:
+			this.container.onmousemove = (e: MouseEvent) => {
+				dragged = true;
+				// calculate the new cursor position:
+				pos1 = pos3 - e.clientX;
+				pos2 = pos4 - e.clientY;
+				pos3 = e.clientX;
+				pos4 = e.clientY;
+				
+				// set the element's new position:
+				elemNode.style.left = (elemNode.offsetLeft - pos1) + "px";
+				elemNode.style.top = (elemNode.offsetTop - pos2) + "px";
+		
+				// move all edges
+				const nodeId = elemNode.getAttribute('data-id');
+				const inputConnections = this.container.querySelectorAll(".drawgraph-edge[data-input-node='" + nodeId + "']");
+				for (var i = 0; i < inputConnections.length; i++) {
+				const line = inputConnections[i].getElementsByTagName('line')[0];
+				line.setAttribute('x1', String(+(line.getAttribute('x1') ?? 0) - pos1));
+				line.setAttribute('y1', String(+(line.getAttribute('y1') ?? 0) - pos2));
+				}
+				const outputConnections = this.container.querySelectorAll(".drawgraph-edge[data-output-node='" + nodeId + "']");
+				for (var i = 0; i < outputConnections.length; i++) {
+				const line = outputConnections[i].getElementsByTagName('line')[0];
+				line.setAttribute('x2', String(+(line.getAttribute('x2') ?? 0) - pos1));
+				line.setAttribute('y2', String(+(line.getAttribute('y2') ?? 0) - pos2));
+				}
+			};
+			dragged = false;
 		};
 	
 		// add callback
 		elemNode.onclick = (e: MouseEvent) => {
 			if (!dragged && e.button === 0) {
-				const selectedNodes = this.container.querySelectorAll('.drawgraph-node.selected');
+				const selectedNodes = this.container.querySelectorAll(".drawgraph-node.selected");
 				for (var i = 0; i < selectedNodes.length; i++) {
 					selectedNodes[i].classList.remove('selected');
 				}
-				this.container.querySelector('.drawgraph-node[data-id="' + nodeId + '"]')?.classList.add('selected');
-				if (this.callbacks['nodeClicked']) {
-					this.callbacks['nodeClicked'](this.getNode(nodeId));
+				this.container.querySelector(".drawgraph-node[data-id='" + nodeId + "']")?.classList.add('selected');
+
+				if (this.onNodeClicked) {
+					this.onNodeClicked(this.getNode(nodeId)!);
 				}
 			}
 		};
@@ -230,19 +226,19 @@ export default class Editor {
 		return nodeId;
 	}
 	updateNodeData(id: string, data: any) {
-		var elemt = this.container.querySelector('.drawgraph-node[data-id="' + id + '"]');
+		var elemt = this.container.querySelector(".drawgraph-node[data-id='" + id + "']");
 		if (elemt) {
 			elemt.setAttribute('data-data', JSON.stringify(data));
 		}
 	}
 	removeNode(node: string) {
-		const nodes = this.container.querySelectorAll<HTMLElement>('.drawgraph-node[data-id="' + node + '"]')
+		const nodes = this.container.querySelectorAll<HTMLElement>(".drawgraph-node[data-id='" + node + "']")
 		if (nodes.length > 0) {
 			const data = this.elementNodeToData(nodes[0]);
 			// remove node
 			this.container.removeChild(nodes[0]);
 			// remove all edges
-			const edges = this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + node + '"], .drawgraph-edge[data-output-node="' + node + '"]');
+			const edges = this.container.querySelectorAll(".drawgraph-edge[data-input-node='" + node + "'], .drawgraph-edge[data-output-node='" + node + "']");
 			for (var i = 0; i < edges.length; i++) {
 				this.removeEdge(
 					edges[i].getAttribute('data-input-node')!,
@@ -251,15 +247,16 @@ export default class Editor {
 					edges[i].getAttribute('data-output')!
 				);
 			}
-			if (this.callbacks['nodeRemoved']) {
-				this.callbacks['nodeRemoved'](data);
+
+			if (this.onNodeRemoved) {
+				this.onNodeRemoved(data);
 			}
 		}
 	}
 	
 	// in/output functions
 	addNodeInput(node: string, input: NodePort) {
-		var elemInputs = this.container.querySelector('.drawgraph-node[data-id="' + node + '"] .inputs');
+		var elemInputs = this.container.querySelector(".drawgraph-node[data-id='" + node + "'] .inputs");
 
 		var elemInput = document.createElement("div");
 		elemInput.classList.add('input');
@@ -269,11 +266,15 @@ export default class Editor {
 		}
 		var elemLabel = document.createElement("span");
 		elemLabel.innerText = input.name;
+		if (input.renameable) {
+			elemLabel.ondblclick = (e: MouseEvent) => {
+				console.log('rename');
+			};
+		}
+
 		elemInput.appendChild(elemLabel);
 		elemInput.onmouseup = (e: MouseEvent) => {
-			e.preventDefault();
-
-			const currentEdge = this.container.querySelector('#drawgraph-edge-current');
+			const currentEdge = this.container.querySelector("#drawgraph-edge-current");
 			if (!currentEdge) { // no current edge was draw, could be because of max edges in output node
 				return;
 			}
@@ -283,7 +284,7 @@ export default class Editor {
 			const maxEdges = +(target.getAttribute('data-max-edges') ?? 0);
 			const nodeId = target.parentElement?.parentElement?.parentElement?.getAttribute('data-id');
 			const inputId = target.getAttribute('data-input');
-			if (maxEdges && this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"][data-output="' + inputId + '"]').length >= maxEdges) {
+			if (maxEdges && this.container.querySelectorAll(".drawgraph-edge[data-output-node='" + nodeId + "'][data-output='" + inputId + "']").length >= maxEdges) {
 				console.trace('Max edges');
 				return;
 			}
@@ -291,7 +292,7 @@ export default class Editor {
 			// check duplicate
 			const edgeInputNode = currentEdge.getAttribute('data-input-node');
 			const edgeInput = currentEdge.getAttribute('data-input');
-			if (this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + nodeId + '"][data-output="' + inputId + '"][data-input-node="' + edgeInputNode + '"][data-input="' + edgeInput + '"]').length > 0) {
+			if (this.container.querySelectorAll(".drawgraph-edge[data-output-node='" + nodeId + "'][data-output='" + inputId + "'][data-input-node='" + edgeInputNode + "'][data-input='" + edgeInput + "']").length > 0) {
 				console.trace('Duplicate');
 				return;
 			}
@@ -321,7 +322,7 @@ export default class Editor {
 		this.alignEdges(node);
 	}
 	addNodeOutput(node: string, output: NodePort) {
-		var elemOutputs = this.container.querySelector('.drawgraph-node[data-id="' + node + '"] .outputs');
+		var elemOutputs = this.container.querySelector(".drawgraph-node[data-id='" + node + "'] .outputs");
 		
 		var elemOutput = document.createElement("div");
 		elemOutput.classList.add('output');
@@ -332,9 +333,14 @@ export default class Editor {
 		var elemLabel = document.createElement("span");
 		elemLabel.innerText = output.name;
 		elemOutput.appendChild(elemLabel);
+		if (output.renameable) {
+			console.log(elemLabel);
+			elemLabel.ondblclick = (e: MouseEvent) => {
+				console.log('rename');
+			};
+		}
 		// on draw new edge
 		elemOutput.onmousedown = (e: MouseEvent) => {
-			e.preventDefault();
 			if (e.button != 0) {
 				return;
 			}
@@ -344,12 +350,12 @@ export default class Editor {
 			const maxEdges = +(target.getAttribute('data-max-edges') ?? 0);
 			const nodeId = target.parentElement?.parentElement?.parentElement?.getAttribute('data-id');
 			const outputId = target.getAttribute('data-output');
-			if (maxEdges && this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + nodeId + '"][data-input="' + outputId + '"]').length >= maxEdges) {
+			if (maxEdges && this.container.querySelectorAll(".drawgraph-edge[data-input-node='" + nodeId + "'][data-input='" + outputId + "']").length >= maxEdges) {
 				console.trace('Max edges');
 				return;
 			}
 			// set all inputs to disabled during dragging
-			const nodePortsDisable = Array.from(this.container.querySelectorAll('.drawgraph-node .outputs .output'));
+			const nodePortsDisable = Array.from(this.container.querySelectorAll(".drawgraph-node .outputs .output"));
 			for (var i = 0; i < nodePortsDisable.length; i++) {
 				nodePortsDisable[i].classList.add('disabled');
 			}
@@ -386,7 +392,6 @@ export default class Editor {
 				}
 			};
 			this.container.onmousemove = (e: MouseEvent) => {
-				e.preventDefault();
 				var line = this.container.querySelector('#drawgraph-edge-current line');
 				var rect = (e as any).currentTarget.getBoundingClientRect();
 				line?.setAttribute('x2', String(e.clientX - rect.left));
@@ -397,16 +402,16 @@ export default class Editor {
 		this.alignEdges(node);
 	}
 	removeNodeOutput(nodeId: string, outputId: string) {
-		var elem = this.container.querySelector('.drawgraph-node[data-id="' + nodeId + '"] .outputs');
+		var elem = this.container.querySelector(".drawgraph-node[data-id='" + nodeId + "'] .outputs");
 		if (!elem) {
 			return;
 		}
-		var elemOutput = elem.querySelector('.output[data-output="' + outputId + '"');
+		var elemOutput = elem.querySelector(".output[data-output='" + outputId + "'");
 		if (!elemOutput) {
 			return;
 		}
 		// remove all edges
-		const edges = Array.from(this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + nodeId + '"][data-input="' + outputId + '"]'));
+		const edges = Array.from(this.container.querySelectorAll(".drawgraph-edge[data-input-node='" + nodeId + "'][data-input='" + outputId + "']"));
 		for (var i = 0; i < edges.length; i++) {
 			this.container.removeChild(edges[i]);
 		}
@@ -445,7 +450,6 @@ export default class Editor {
 		var newLine = document.createElementNS('http://www.w3.org/2000/svg','line');
 
 		newLine.ondblclick = (e: MouseEvent) => {
-			e.preventDefault();
 			const target = e.target as Element;
 			this.removeEdge(
 				target.parentElement?.getAttribute('data-input-node')!,
@@ -459,42 +463,42 @@ export default class Editor {
 		lineContainer.appendChild(newLine);
 		this.container.appendChild(lineContainer);
 		// add class to node ports
-		this.container.querySelector('.drawgraph-node[data-id="' + from + '"] .outputs .output[data-output="' + portOutput + '"')?.classList.add('used');
-		this.container.querySelector('.drawgraph-node[data-id="' + to + '"] .inputs .input[data-input="' + portInput + '"')?.classList.add('used');
+		this.container.querySelector(".drawgraph-node[data-id='" + from + "'] .outputs .output[data-output='" + portOutput + "'")?.classList.add('used');
+		this.container.querySelector(".drawgraph-node[data-id='" + to + "'] .inputs .input[data-input='" + portInput + "'")?.classList.add('used');
 
-		if (this.callbacks['edgeAdded']) {
-			this.callbacks['edgeAdded'](this.elementEdgeToData(lineContainer));
+		if (this.onEdgeAdded) {
+			this.onEdgeAdded(this.elementEdgeToData(lineContainer));
 		}
 	}
 	removeEdge(from: string, portOutput: string, to: string, portInput: string) {
-		const edge = this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + from + '"][data-input="' + portOutput + '"][data-output-node="' + to + '"][data-output="' + portInput + '"]')
+		const edge = this.container.querySelectorAll(".drawgraph-edge[data-input-node='" + from + "'][data-input='" + portOutput + "'][data-output-node='" + to + "'][data-output='" + portInput + "']");
 		if (edge.length > 0) {
 			const data = this.elementEdgeToData(edge[0]);
 			this.container.removeChild(edge[0]);
 			// remove class to node ports
-			if (this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + from + '"][data-input="' + portOutput + '"]').length == 0) {
-				this.container.querySelector('.drawgraph-node[data-id="' + from + '"] .outputs .output[data-output="' + portOutput + '"')?.classList.remove('used');
+			if (this.container.querySelectorAll(".drawgraph-edge[data-input-node='" + from + "'][data-input='" + portOutput + "']").length == 0) {
+				this.container.querySelector(".drawgraph-node[data-id='" + from + "'] .outputs .output[data-output='" + portOutput + "'")?.classList.remove('used');
 			}
-			if (this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + to + '"][data-output="' + portInput + '"]').length == 0) {
-				this.container.querySelector('.drawgraph-node[data-id="' + to + '"] .inputs .input[data-input="' + portInput + '"')?.classList.remove('used');
+			if (this.container.querySelectorAll(".drawgraph-edge[data-output-node='" + to + "'][data-output='" + portInput + "']").length == 0) {
+				this.container.querySelector(".drawgraph-node[data-id='" + to + "'] .inputs .input[data-input='" + portInput + "'")?.classList.remove('used');
 			}
-			if (this.callbacks['edgeRemoved']) {
-				this.callbacks['edgeRemoved'](data);
+			if (this.onEdgeRemoved) {
+				this.onEdgeRemoved(data);
 			}
 		}
 	}
 	alignEdge(line: SVGElement, from: string, portOutput: string, to: string, portInput: string) {
-		const elemFromNode = this.container.querySelector<HTMLElement>('[data-id="' + from + '"]');
-		const elemFromOutput = elemFromNode?.querySelector<HTMLElement>('[data-output="' + portOutput + '"]');
-		const elemToNode = this.container.querySelector<HTMLElement>('[data-id="' + to + '"]');
-		const elemToInput = elemToNode?.querySelector<HTMLElement>('[data-input="' + portInput + '"]');
+		const elemFromNode = this.container.querySelector<HTMLElement>("[data-id='" + from + "']");
+		const elemFromOutput = elemFromNode?.querySelector<HTMLElement>("[data-output='" + portOutput + "']");
+		const elemToNode = this.container.querySelector<HTMLElement>("[data-id='" + to + "']");
+		const elemToInput = elemToNode?.querySelector<HTMLElement>("[data-input='" + portInput + "']");
 		line.setAttribute('x1', String((elemFromNode?.offsetLeft ?? 0) + (elemFromOutput?.offsetLeft ?? 0) + (elemFromOutput?.getBoundingClientRect().width ?? 0) / 2));
 		line.setAttribute('y1', String((elemFromNode?.offsetTop ?? 0) + (elemFromOutput?.offsetTop ?? 0) + (elemFromOutput?.getBoundingClientRect().height ?? 0) / 2));
 		line.setAttribute('x2', String((elemToNode?.offsetLeft ?? 0) + (elemToInput?.offsetLeft ?? 0) + (elemToInput?.getBoundingClientRect().width ?? 0) / 2));
 		line.setAttribute('y2', String((elemToNode?.offsetTop ?? 0) + (elemToInput?.offsetTop ?? 0) + (elemToInput?.getBoundingClientRect().height ?? 0) / 2));
 	}
 	alignEdges(node: string) {
-		const outputConnections = this.container.querySelectorAll('.drawgraph-edge[data-output-node="' + node + '"]');
+		const outputConnections = this.container.querySelectorAll(".drawgraph-edge[data-output-node='" + node + "']");
 		for (var i = 0; i < outputConnections.length; i++) {
 			this.alignEdge(outputConnections[i].querySelector<SVGElement>('line')!,
 			outputConnections[i].getAttribute('data-input-node')!,
@@ -502,7 +506,7 @@ export default class Editor {
 			outputConnections[i].getAttribute('data-output-node')!,
 			outputConnections[i].getAttribute('data-output')!);
 		}
-		const inputConnections = this.container.querySelectorAll('.drawgraph-edge[data-input-node="' + node + '"]');
+		const inputConnections = this.container.querySelectorAll(".drawgraph-edge[data-input-node='" + node + "']");
 		for (var i = 0; i < inputConnections.length; i++) {
 			this.alignEdge(inputConnections[i].querySelector<SVGElement>('line')!,
 			inputConnections[i].getAttribute('data-input-node')!,
